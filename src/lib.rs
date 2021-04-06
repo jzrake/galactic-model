@@ -10,7 +10,7 @@ use derive_more::{Add,Sub, Mul, Div};
 // including the gravitational constant. Here, slr
 // stands for solar masses.
 #[derive(Debug, Add, Sub, Mul, Div)]
-struct GalacticModel {
+pub struct GalacticModel {
     g:   f64, // gravitational constant (kpc*kpc*kpc/Myr/Myr/slr)
     m_b: f64, // mass of central bulge (slr)
     a_b: f64, // radial scale length of central bulge (kpc)
@@ -27,19 +27,19 @@ struct GalacticModel {
 impl GalacticModel {
 
     // Gravitational potential
-    fn potential(&self, r: f64, z: f64) -> f64 {
+    pub fn potential(&self, r: f64, z: f64) -> f64 {
 
         let phi_bulge      = -self.g * self.m_b / (r*r + z*z + self.a_b*self.a_b).sqrt();
         let phi_thin_disk  = -self.g * self.m_s / (r*r + (self.a_s + (z*z + self.b_s*self.b_s).sqrt()).powi(2)).sqrt();
         let phi_thick_disk = -self.g * self.m_g / (r*r + (self.a_g + (z*z + self.b_g*self.b_g).sqrt()).powi(2)).sqrt();
         let phi_halo       = 0.5*(self.v_h).powi(2)*((r*r + z*z + self.a_h*self.a_h).ln());
 
-        return phi_bulge + phi_thin_disk + phi_thick_disk + phi_halo
+        phi_bulge + phi_thin_disk + phi_thick_disk + phi_halo
 
     }
 
     // Mass density profile obtained via Poisson's equation using the above potential
-    fn density(&self, r: f64, z: f64) -> f64 {
+    pub fn density(&self, r: f64, z: f64) -> f64 {
 
         let r_z_a            = r*r + z*z + self.a_b*self.a_b;
         let rho_bulge_z      = (1.0/(4.0*PI))*self.m_b * ((r_z_a).sqrt() - z*z*(r_z_a).powf(-1.0/2.0)) / (r_z_a);
@@ -68,12 +68,12 @@ impl GalacticModel {
         let rho_halo_r       = 2.0*self.v_h*self.v_h*(z*z + self.a_h*self.a_h)/(r*r + z*z + self.a_h*self.a_h).powi(2);
         let rho_halo         = rho_halo_z + rho_halo_r;
 
-        return rho_bulge + rho_thin_disk + rho_thick_disk + rho_halo
+        rho_bulge + rho_thin_disk + rho_thick_disk + rho_halo
 
     }
 
     // The z-component of the gravitational field obtained via the negative gradient of the above potential
-    fn g_field_z(&self, r: f64, z: f64) -> f64 {
+    pub fn g_field_z(&self, r: f64, z: f64) -> f64 {
 
         let gfz_bulge      = -self.g*self.m_b/(r*r + z*z + self.a_b*self.a_b).powf(3.0/2.0);
         let gfz_thin_disk  = -self.g*self.m_b*z*(self.a_s + (z*z + self.b_s*self.b_s).sqrt())
@@ -81,7 +81,8 @@ impl GalacticModel {
         let gfz_thick_disk = -self.g*self.m_b*z*(self.a_g + (z*z + self.b_g*self.b_g).sqrt())
                              / (r*r + (self.a_g + (z*z + self.b_g*self.b_g).sqrt()).powi(2)).powf(3.0/2.0);
         let gfz_halo       = -self.v_h*self.v_h*z/(r*r + z*z + self.a_h*self.a_h);
-        return gfz_bulge + gfz_thin_disk + gfz_thick_disk + gfz_halo
+        
+        gfz_bulge + gfz_thin_disk + gfz_thick_disk + gfz_halo
 
     }
 
