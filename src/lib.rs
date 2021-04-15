@@ -189,13 +189,17 @@ impl GalacticModel {
     }
 
     /// Pressure from HSE condition assuming variability only in the z
-    /// direction.
-    pub fn vertical_pressure_profile(&self, r: f64, zmax: f64, dz: f64, mut p: f64) -> f64 {
+    /// direction. Returns a `Vec` where each element is a two-tuple of
+    /// (z-coordinate, pressure).
+    pub fn vertical_pressure_profile(&self, r: f64, zmax: f64, dz: f64, mut p: f64) -> Vec<(f64, f64)> {
+        let mut profile = Vec::new();
         let mut z = 0.0;
         while z < zmax {
+            profile.push((z, p));
             p += self.pressure_difference_rk4(r, z, dz);
             z += dz;
         }
-        p
+        profile.push((z, p));
+        profile
     }
 }
