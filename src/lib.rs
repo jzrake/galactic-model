@@ -11,17 +11,17 @@ use derive_more::{Add,Sub, Mul, Div};
 // stands for solar masses.
 #[derive(Debug, Add, Sub, Mul, Div)]
 pub struct GalacticModel {
-    g:   f64, // gravitational constant (kpc*kpc*kpc/Myr/Myr/slr)
-    m_b: f64, // mass of central bulge (slr)
-    a_b: f64, // radial scale length of central bulge (kpc)
-    v_h: f64, // radial velocities at large distances (kpc/Myr)
-    a_h: f64, // radial scale length of dark matter halo (kpc)
-    m_s: f64, // mass of thin disk (slr)
-    a_s: f64, // radial scale length of thin disk (kpc)
-    b_s: f64, // vertical scale length of thin disk (kpc)
-    m_g: f64, // mass of thick disk (slr)
-    a_g: f64, // radial scale length of thick disk (kpc)
-    b_g: f64, // vertical scale length of thick disk (kpc)
+    pub g:   f64, // gravitational constant (kpc*kpc*kpc/Myr/Myr/slr)
+    pub m_b: f64, // mass of central bulge (slr)
+    pub a_b: f64, // radial scale length of central bulge (kpc)
+    pub v_h: f64, // radial velocities at large distances (kpc/Myr)
+    pub a_h: f64, // radial scale length of dark matter halo (kpc)
+    pub m_s: f64, // mass of thin disk (slr)
+    pub a_s: f64, // radial scale length of thin disk (kpc)
+    pub b_s: f64, // vertical scale length of thin disk (kpc)
+    pub m_g: f64, // mass of thick disk (slr)
+    pub a_g: f64, // radial scale length of thick disk (kpc)
+    pub b_g: f64, // vertical scale length of thick disk (kpc)
 }
 
 impl GalacticModel {
@@ -38,52 +38,77 @@ impl GalacticModel {
 
     }
 
-    // Mass density profile obtained via Poisson's equation using the above potential
+    // Mass density profile obtained via Poisson's equation using the above potential.
+    // Here, only the density from the thin disk is considered to contribute to the overall
+    // gas density of the system; the other terms are calculated, but are commented out
+    // by default.
     pub fn density(&self, r: f64, z: f64) -> f64 {
 
-        let r_z_a            = r*r + z*z + self.a_b*self.a_b;
-        let rho_bulge_z      = (1.0/(4.0*PI))*self.m_b * ((r_z_a).sqrt() - z*z*(r_z_a).powf(-1.0/2.0)) / (r_z_a);
-        let rho_bulge_r      = (1.0/(4.0*PI))*self.m_b * (2.0*(r_z_a).sqrt() - r*r*(r_z_a).powf(-1.0/2.0)) / (r_z_a);
-        let rho_bulge        = rho_bulge_z + rho_bulge_r;
+        //let rho_bulge        = (3.0*self.m_b/4.0/PI/(self.a_b).powi(3))*
+        //                       (1.0 + (r*r + z*z)/self.a_b/self.a_b).powf(-5.0/2.0);
 
-        let z_b_s            = (z*z + self.b_s*self.b_s).sqrt();
-        let z_b_a_s          = self.a_s + z_b_s;
-        let r_z_b_a_s        = r*r + (z_b_a_s).powi(2);
-        let rho_thin_disk_z  = self.m_s/4.0/PI * (z_b_s*r_z_b_a_s.powf(3.0/2.0) + z*z*r_z_b_a_s.powf(3.0/2.0)
-                               - z*z*z_b_a_s*r_z_b_a_s.powf(3.0/2.0)/z_b_s - 3.0*z*z*z_b_a_s*z_b_a_s*r_z_b_a_s.sqrt())
-                               / (z_b_s * r_z_b_a_s.powi(3));
-        let rho_thin_disk_r  = self.m_s/4.0/PI * (2.0 * r_z_b_a_s.sqrt() - r*r*r_z_b_a_s.powf(-1.0/2.0)) / r_z_b_a_s;
+        let rho_thin_disk_z  = -self.m_s/4.0/PI*((4.0*self.a_s*z.powi(4) + (z*z + self.b_s*self.b_s).sqrt()
+                               *((2.0*self.a_s*self.a_s - r*r)*z*z - self.b_s*self.b_s*r*r - 3.0*self.a_s*self.a_s*self.b_s*self.b_s)
+                               + (z*z + self.b_s*self.b_s).powf(3.0/2.0)*(2.0*z*z - self.b_s*self.b_s) + self.a_s*self.b_s*self.b_s*z*z
+                               - self.a_s*self.b_s*self.b_s*r*r - 3.0*self.a_s*(self.b_s).powi(4)-(self.a_s).powi(3)*self.b_s*self.b_s)
+                               /((z*z + self.b_s*self.b_s).powf(3.0/2.0)*(((z*z + self.b_s*self.b_s).sqrt() + self.a_s).powi(2) + r*r).powf(5.0/2.0)));
+        let rho_thin_disk_r  = self.m_s/4.0/PI*((2.0*(r*r + (self.a_s + (z*z + self.b_s*self.b_s).sqrt()).powi(2)) - 3.0*r*r)
+                               /(r*r + (self.a_s + (z*z + self.b_s*self.b_s).sqrt()).powi(2)).powf(5.0/2.0));
         let rho_thin_disk    = rho_thin_disk_z + rho_thin_disk_r;
 
-        let z_b_g            = (z*z + self.b_g*self.b_g).sqrt();
-        let z_b_a_g          = self.a_g + z_b_g;
-        let r_z_b_a_g        = r*r + (z_b_a_g).powi(2);
-        let rho_thick_disk_z = self.m_g/4.0/PI * (z_b_g*r_z_b_a_g.powf(3.0/2.0) + z*z*r_z_b_a_g.powf(3.0/2.0)
-                               - z*z*z_b_a_g*r_z_b_a_g.powf(3.0/2.0)/z_b_g - 3.0*z*z*z_b_a_g*z_b_a_g*r_z_b_a_g.sqrt())
-                               / (z_b_g * r_z_b_a_g.powi(3));
-        let rho_thick_disk_r = self.m_g/4.0/PI * (2.0 * r_z_b_a_g.sqrt() - r*r*r_z_b_a_g.powf(-1.0/2.0)) / r_z_b_a_g;
-        let rho_thick_disk   = rho_thick_disk_z + rho_thick_disk_r;
+        //let rho_thick_disk_z = -self.m_g/4.0/PI*((4.0*self.a_g*z.powi(4) + (z*z + self.b_g*self.b_g).sqrt()
+        //                       *((2.0*self.a_g*self.a_g - r*r)*z*z - self.b_g*self.b_g*r*r - 3.0*self.a_g*self.a_g*self.b_g*self.b_g)
+        //                       + (z*z + self.b_g*self.b_g).powf(3.0/2.0)*(2.0*z*z - self.b_g*self.b_g) + self.a_g*self.b_g*self.b_g*z*z
+        //                       - self.a_g*self.b_g*self.b_g*r*r - 3.0*self.a_g*(self.b_g).powi(4)-(self.a_g).powi(3)*self.b_g*self.b_g)
+        //                       /((z*z + self.b_g*self.b_g).powf(3.0/2.0)*(((z*z + self.b_g*self.b_g).sqrt() + self.a_g).powi(2) + r*r).powf(5.0/2.0)));
+        //let rho_thick_disk_r = self.m_g/4.0/PI*((2.0*(r*r + (self.a_g + (z*z + self.b_g*self.b_g).sqrt()).powi(2)) - 3.0*r*r)
+        //                       /(r*r + (self.a_g + (z*z + self.b_g*self.b_g).sqrt()).powi(2)).powf(5.0/2.0));
+        //let rho_thick_disk   = rho_thick_disk_z + rho_thick_disk_r;
 
-        let rho_halo_z       = self.v_h*self.v_h*(r*r - z*z + self.a_h*self.a_h)/(r*r + z*z + self.a_h*self.a_h).powi(2);
-        let rho_halo_r       = 2.0*self.v_h*self.v_h*(z*z + self.a_h*self.a_h)/(r*r + z*z + self.a_h*self.a_h).powi(2);
-        let rho_halo         = rho_halo_z + rho_halo_r;
+        //let rho_halo         = self.v_h*self.v_h*(3.0*self.a_h*self.a_h + r*r + z*z)
+        //                       /(4.0*PI*self.g*((r*r + z*z + self.a_h*self.a_h).powi(2)));
 
-        rho_bulge + rho_thin_disk + rho_thick_disk + rho_halo
+        rho_thin_disk
 
     }
 
     // The z-component of the gravitational field obtained via the negative gradient of the above potential
     pub fn g_field_z(&self, r: f64, z: f64) -> f64 {
 
-        let gfz_bulge      = -self.g*self.m_b/(r*r + z*z + self.a_b*self.a_b).powf(3.0/2.0);
+        let gfz_bulge      = -self.g*self.m_b*z/(r*r + z*z + self.a_b*self.a_b).powf(3.0/2.0);
         let gfz_thin_disk  = -self.g*self.m_b*z*(self.a_s + (z*z + self.b_s*self.b_s).sqrt())
-                             / (r*r + (self.a_s + (z*z + self.b_s*self.b_s).sqrt()).powi(2)).powf(3.0/2.0);
+                             / (r*r + (self.a_s + (z*z + self.b_s*self.b_s).sqrt()).powi(2)).powf(3.0/2.0)
+                             / (z*z + self.b_s*self.b_s).sqrt();
         let gfz_thick_disk = -self.g*self.m_b*z*(self.a_g + (z*z + self.b_g*self.b_g).sqrt())
-                             / (r*r + (self.a_g + (z*z + self.b_g*self.b_g).sqrt()).powi(2)).powf(3.0/2.0);
+                             / (r*r + (self.a_g + (z*z + self.b_g*self.b_g).sqrt()).powi(2)).powf(3.0/2.0)
+                             / (z*z + self.b_g*self.b_g).sqrt();
         let gfz_halo       = -self.v_h*self.v_h*z/(r*r + z*z + self.a_h*self.a_h);
         
         gfz_bulge + gfz_thin_disk + gfz_thick_disk + gfz_halo
 
+    }
+
+    // RK4 algorithm for the purpose of computing pressure
+    pub fn rk4(&self, r: f64, z: f64, dz: f64, p: f64) -> f64 {
+
+        let k1 = self.density(r, z)*self.g_field_z(r, z);
+        let k2 = self.density(r, z + 0.5*dz)*self.g_field_z(r, z + 0.5*dz);
+        let k3 = self.density(r, z + 0.5*dz)*self.g_field_z(r, z + 0.5*dz);
+        let k4 = self.density(r, z + dz)*self.g_field_z(r, z + dz);
+
+        p + (1.0/6.0)*dz*(k1 + 2.0*k2 + 2.0*k3 + k4)
+    }
+
+    // Pressure from HSE condition assuming variability only in the z direction
+    pub fn pressure_z(&self, r: f64, z: f64, dz: f64, p_0: f64) -> f64 {
+        let mut p  = p_0;
+        let mut ct = 0.0;
+        while ct < z {
+            let pre = self.rk4(r, ct, dz, p);
+            ct += dz;
+            p = pre;
+        }
+        p
     }
 
 }
