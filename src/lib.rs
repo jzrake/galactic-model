@@ -2,14 +2,11 @@
 //! for the central bulge, two Miyamoto- Nagai models for the thin and thick
 //! disks, and a logarithmic model for the dark matter halo.
 
-#![allow(unused)]
-
-use derive_more::{Add, Div, Mul, Sub};
 use std::f64::consts::PI;
 
 /// Galactic model parameters, including the gravitational constant. Here, slr
 /// stands for solar masses.
-#[derive(Clone, Debug, Add, Sub, Mul, Div)]
+#[derive(Clone, Debug)]
 pub struct GalacticModel {
     pub g: f64,   // gravitational constant (kpc*kpc*kpc/Myr/Myr/slr)
     pub m_b: f64, // mass of central bulge (slr)
@@ -149,10 +146,10 @@ impl GalacticModel {
             a_b,
             v_h,
             a_h,
-            m_s,
+            m_s: _,
             a_s,
             b_s,
-            m_g,
+            m_g: _,
             a_g,
             b_g,
         } = self.clone();
