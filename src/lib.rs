@@ -1,11 +1,13 @@
 //! 10-parameter axisymmetric model of a disk galaxy, using the Plummer model
 //! for the central bulge, two Miyamoto- Nagai models for the thin and thick
 //! disks, and a logarithmic model for the dark matter halo.
+//!
 
 use std::f64::consts::PI;
 
 /// Galactic model parameters, including the gravitational constant. Here, slr
 /// stands for solar masses.
+/// 
 #[derive(Clone, Debug)]
 pub struct GalacticModel {
     pub g: f64,   // gravitational constant (kpc*kpc*kpc/Myr/Myr/slr)
@@ -21,6 +23,10 @@ pub struct GalacticModel {
     pub b_g: f64, // vertical scale length of thick disk (kpc)
 }
 
+/// The components of the galactic model: these can be the model contributions
+/// to the mass density, gravitational potential, or gravitational
+/// acceleration, depending on the context.
+///
 pub struct ModelComponents {
     pub bulge: f64,
     pub thin_disk: f64,
@@ -175,7 +181,7 @@ impl GalacticModel {
     }
 
     /// RK4 algorithm for the purpose of computing pressure.
-    /// 
+    ///
     pub fn pressure_difference_rk4(&self, r: f64, z: f64, dz: f64) -> f64 {
         let rho = |r, z| self.density(r, z).thin_disk;
         let gz = |r, z| self.g_field_z(r, z).total();
@@ -188,9 +194,10 @@ impl GalacticModel {
         dz * (k1 + 2.0 * k2 + 2.0 * k3 + k4) / 6.0
     }
 
-    /// Pressure from HSE condition assuming variability only in the z
-    /// direction. Returns a `Vec` where each element is a two-tuple of
-    /// (z-coordinate, pressure).
+    /// Pressure of the gas in the thin disk from HSE condition, assuming the
+    /// pressure varies only in the z direction. Returns a `Vec` where each
+    /// element is a two-tuple of (altitude, pressure).
+    ///
     pub fn vertical_pressure_profile(&self, r: f64, zmax: f64, dz: f64, mut p: f64) -> Vec<(f64, f64)> {
         let mut profile = Vec::new();
         let mut z = 0.0;
